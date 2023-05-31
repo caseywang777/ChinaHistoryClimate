@@ -36,7 +36,8 @@ mainCode = [{'code':'10', 'str': 'Precipitation'},
 code2Name = {d['code']: d['str'] for d in mainCode}
 
 #load climate data
-climateDf = pd.read_excel('REACHES1368_1911.xlsx', sheet_name='data')
+# climateDf = pd.read_excel('REACHES1368_1911.xlsx', sheet_name='data')
+climateDf = pd.read_csv('REACHES1368_1911.csv')
 climateDf['mainCode'] = climateDf['event_code'].str[:2]
 cond = [False] * len(climateDf)
 for i in mainCode:
