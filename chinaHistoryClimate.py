@@ -3,16 +3,14 @@ from dash import dcc
 import plotly.graph_objs as go
 from dash import html
 import pandas as pd
-import numpy as np
-from urllib.request import urlopen
 from dash.dependencies import Input, Output
 import json
 import plotly.express as px
-import copy
 from dash import dash_table
 # from dash_extensions.enrich import Output, DashProxy, Input, MultiplexerTransform
 
 app = dash.Dash()
+server = app.server
 # app = DashProxy(prevent_initial_callbacks=True, transforms=[MultiplexerTransform()])
 
 ### data loading
@@ -362,5 +360,5 @@ def selectProvince(clickData, varSelect):
 #     return fig
 
 if __name__ == '__main__':
-    app.run_server(port = 4050)
+    app.run_server()
 
