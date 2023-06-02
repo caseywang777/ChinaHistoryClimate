@@ -39,6 +39,7 @@ code2Name = {d['code']: d['str'] for d in mainCode}
 # climateDf = pd.read_excel('REACHES1368_1911.xlsx', sheet_name='data')
 climateDf = pd.read_csv('REACHES1368_1911.csv')
 climateDf['mainCode'] = climateDf['event_code'].str[:2]
+climateDf['subCode'] = climateDf['event_code'].str[2:4]
 cond = [False] * len(climateDf)
 for i in mainCode:
     cond = cond | (climateDf['mainCode'] == i['code'])
@@ -271,20 +272,6 @@ def updateDataTable(hover_data):
     return df_filtered.to_dict('records'), columns
 
     
-mapClickString = "aa"
-
-# @app.callback(
-#     Output('hidden-div', 'children'),
-#     Input('lineChart', 'clickData')
-# )
-# def display_hover_data(hover_data):
-#     # print(hover_data)
-#     # if hover_data is not None:
-#     #     x_value = hover_data['points'][0]['x']
-#     #     return f'Hover x-axis location: {x_value}'
-#     # else:
-#     #     return 'No hover data'
-#     return "aaa"
 
 @app.callback(
     Output('barChart', 'figure'),
@@ -303,8 +290,8 @@ def updateBarChart(hover_data, varSelect):
         yearFilterDf = climateBarDf[climateBarDf['year_lunar_st'] == hoverYear ]
     else:
         yearFilterDf = climateBarDf[climateBarDf['year_lunar_st'] == 1911]
-    df_count = yearFilterDf.groupby(['place_provin', 'mainCode']).size().reset_index(name='Count')
-    barChartFig = px.bar(df_count, x='place_provin', y='Count', color='mainCode')
+    df_count = yearFilterDf.groupby(['place_provin', 'subCode']).size().reset_index(name='Count')
+    barChartFig = px.bar(df_count, x='place_provin', y='Count', color='subCode')
     barChartFig.update_layout(
         title={
             'text': 'Record Count of Sub-categories of "' + selectedAttribute + '" in ' + str(hoverYear) + ' by Provinces',
@@ -315,7 +302,7 @@ def updateBarChart(hover_data, varSelect):
         yaxis_title='Record Count',
         legend_title_text='Variable'
     )
-    barChartFig.for_each_trace(lambda t: t.update(name = code2Name[t['name']]))
+    # barChartFig.for_each_trace(lambda t: t.update(name = code2Name[t['name']]))
     return barChartFig
 
 @app.callback(Output('lineChart', 'figure'),
@@ -353,28 +340,31 @@ def hoverMapProvince(hoverData, varSelect):
         lineFig.update_traces(opacity=1, selector=dict(name=hoverData['points'][0]['location'])) 
     
     return lineFig
-
+# , Output("provinceSelector", "value")
 @app.callback(Output('map', 'figure'),
-    [Input('map', 'clickData'), Input('categorySelector','value')])
-def selectProvince(clickData, varSelect): 
-    global mapClickString
+    [Input('map', 'clickData'), Input('categorySelector','value')], Input('provinceSelector','value'))
+def selectProvince(clickData, varSelect, provinceSltValue): 
     global climateDf
     if clickData is not None:
-        print(clickData)
-        print(clickData['points'][0]['location'])
+        # print(clickData)
+        # print(clickData['points'][0]['location'])
         clickProvince = clickData['points'][0]['location']
         if( provinceDict[clickProvince] == 1):
             provinceDict[clickProvince] = 0
         else:
             provinceDict[clickProvince] = 1
-        print(provinceDict)
-        mapClickString = mapClickString + " " + clickData['points'][0]['location']
+        # print(provinceDict)
+
+    # for k in provinceDict:
+    #     provinceDict[k] = 0
+    # for p in provinceSltValue:
+    #     provinceDict[p] = 1
 
     climateFilterDf = climateDf[climateDf['mainCode'] == varSelect]
     climateCountDf = climateFilterDf['place_provin'].value_counts().to_frame().reset_index()
     climateCountDf.columns = ['province', 'count']
 
-    print(provinceDict)
+    # print(provinceDict)
     climateCountDfBk = climateCountDf.copy(deep=True)
     for key, value in provinceDict.items():
         if value == 0 :
@@ -423,12 +413,17 @@ def selectProvince(clickData, varSelect):
         }
     )
 
+    selectedValue = [k[0] for k in provinceDict.items() if k[1] == 1]
+    print(selectedValue)
+
+    # return fig, selectedValue
     return fig
     # return "click"
 
 @app.callback(Output('heatMap', 'figure'),
               [Input('multiCategorySelector','value'), Input('yearSelector','value'), Input('map', 'clickData')])
 def updateHeatmap(categories, yearCond, mapClick):
+    global climateDf
     print(categories)
     print(yearCond)
     cond = (climateDf['year_lunar_st'] > yearCond[0]) & (climateDf['year_lunar_st'] < yearCond[1])
@@ -448,7 +443,7 @@ def updateHeatmap(categories, yearCond, mapClick):
     figure = px.imshow(new_df)
     figure.update_layout(
         title={
-            'text': 'Record Count Heatmap',
+            'text': 'Record Count Distribution (Province vs Year)',
             'x': 0.5,  # Set x-coordinate to 0.5 for center alignment
             'xanchor': 'center'  # Anchor the title in the center
         },
@@ -466,6 +461,21 @@ def generate_csv(n_nlicks):
     global dfDownload
     return dcc.send_data_frame(dfDownload.to_csv, filename="some_name.csv")
 
+# @app.callback(Output("provinceSelector", "value"), 
+#               [Input('map', 'clickData')])
+# def updateProvinceSelector(clickData):
+#     # if clickData is not None:
+#     #     # print(clickData)
+#     #     # print(clickData['points'][0]['location'])
+#     #     clickProvince = clickData['points'][0]['location']
+#     #     if( provinceDict[clickProvince] == 1):
+#     #         provinceDict[clickProvince] = 0
+#     #     else:
+#     #         provinceDict[clickProvince] = 1
+#     # print(provinceDict)
+#     # # selectedValue = [k[0] for k in provinceDict.items() if k[1] == 1],
+#     # # return selectedValue
+#     return ['山東省']
 
 if __name__ == '__main__':
     app.run_server()
